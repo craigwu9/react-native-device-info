@@ -262,7 +262,9 @@ RCT_EXPORT_MODULE(RNDeviceInfo)
 - (NSDictionary *)constantsToExport
 {
     UIDevice *currentDevice = [UIDevice currentDevice];
-    NSString *uniqueId = [DeviceUID uid];
+    DeviceUID * deviceUID = [DeviceUID shareInstanc];
+    NSString *uniqueId = [deviceUID uid];
+    NSString *uniqueIdType = [deviceUID uidType];
 
     return @{
              @"systemName": currentDevice.systemName,
@@ -275,6 +277,7 @@ RCT_EXPORT_MODULE(RNDeviceInfo)
              @"deviceLocale": self.deviceLocale ?: [NSNull null],
              @"deviceCountry": self.deviceCountry ?: [NSNull null],
              @"uniqueId": uniqueId,
+             @"uniqueIdType": uniqueIdType,
              @"appName": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: [NSNull null],
              @"bundleId": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"] ?: [NSNull null],
              @"appVersion": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: [NSNull null],

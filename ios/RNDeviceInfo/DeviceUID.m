@@ -3,13 +3,16 @@
 // Modified as the original version crashes.
 
 #import "DeviceUID.h"
+#import <AdSupport/AdSupport.h>
 
 @import UIKit;
 
 @interface DeviceUID ()
 
 @property(nonatomic, strong, readonly) NSString *uidKey;
+@property(nonatomic, strong, readonly) NSString *uidTypeKey;
 @property(nonatomic, strong, readonly) NSString *uid;
+@property(nonatomic, strong, readonly) NSString *uidType;
 
 @end
 
@@ -18,18 +21,27 @@
 @synthesize uid = _uid;
 
 #pragma mark - Public methods
+static DeviceUID * instance;
 
-+ (NSString *)uid {
-    return [[[DeviceUID alloc] initWithKey:@"deviceUID"] uid];
++ (DeviceUID *)shareInstanc {
+    @synchronized(instance) {
+        if (!instance) {
+            instance = [[DeviceUID alloc] init];
+            [instance getUid];
+        }
+    }
+    return instance;
 }
 
 #pragma mark - Instance methods
 
-- (id)initWithKey:(NSString *)key {
+- (id)init {
     self = [super init];
     if (self) {
-        _uidKey = key;
+        _uidKey = @"deviceUID";
+        _uidTypeKey = @"deviceUIDType";
         _uid = nil;
+        _uidType = nil;
     }
     return self;
 }
@@ -42,24 +54,30 @@
       - Generate a random UUID if everything else is unavailable
     At last, the UID is persisted if needed to.
  */
-- (NSString *)uid {
-    if (!_uid) _uid = [[self class] valueForKeychainKey:_uidKey service:_uidKey];
-    if (!_uid) _uid = [[self class] valueForUserDefaultsKey:_uidKey];
-    if (!_uid) _uid = [[self class] appleIFV];
-    if (!_uid) _uid = [[self class] randomUUID];
+- (void)getUid {
+    if (!_uid) [[self class] valueForKeychainKey:_uidKey service:_uidKey];
+    if (!_uid) [[self class] valueForUserDefaultsKey:_uidKey];
+    if (!_uid) [self appleIDFA];
+    if (!_uid) [self appleIFV];
+    if (!_uid) [self randomUUID];
     [self save];
-    return _uid;
 }
 
 /*! Persist UID to NSUserDefaults and Keychain, if not yet saved
  */
 - (void)save {
-  if (![DeviceUID valueForUserDefaultsKey:_uidKey]) {
-    [DeviceUID setValue:_uid forUserDefaultsKey:_uidKey];
-  }
-  if (![DeviceUID valueForKeychainKey:_uidKey service:_uidKey]) {
-    [DeviceUID setValue:_uid forKeychainKey:_uidKey inService:_uidKey];
-  }
+    if (![DeviceUID valueForUserDefaultsKey:_uidKey]) {
+        [DeviceUID setValue:_uid forUserDefaultsKey:_uidKey];
+    }
+    if (![DeviceUID valueForUserDefaultsKey:_uidTypeKey]) {
+        [DeviceUID setValue:_uidType forUserDefaultsKey:_uidTypeKey];
+    }
+    if (![DeviceUID valueForKeychainKey:_uidKey service:_uidKey]) {
+        [DeviceUID setValue:_uid forKeychainKey:_uidKey inService:_uidKey];
+    }
+    if (![DeviceUID valueForKeychainKey:_uidTypeKey service:_uidTypeKey]) {
+        [DeviceUID setValue:_uidType forKeychainKey:_uidTypeKey inService:_uidTypeKey];
+    }
 }
 
 #pragma mark - Keychain methods
@@ -118,24 +136,37 @@
 
 #pragma mark - UID Generation methods
 
-+ (NSString *)appleIFV {
+- (void)appleIFV {
     if(NSClassFromString(@"UIDevice") && [UIDevice instancesRespondToSelector:@selector(identifierForVendor)]) {
         // only available in iOS >= 6.0
-        return [[UIDevice currentDevice].identifierForVendor UUIDString];
+        _uidType = @"IDFV";
+        _uid =  [[UIDevice currentDevice].identifierForVendor UUIDString];
     }
-    return nil;
 }
 
-+ (NSString *)randomUUID {
-    if(NSClassFromString(@"NSUUID")) {
-        return [[NSUUID UUID] UUIDString];
+- (void)appleIDFA {
+    if (NSClassFromString(@"ASIdentifierManager")) {
+        ASIdentifierManager * asIdManager = [ASIdentifierManager sharedManager];
+        if (asIdManager.advertisingTrackingEnabled) {
+            _uidType = @"IDFA";
+            _uid = [asIdManager.advertisingIdentifier UUIDString];
+        } else {
+        }
     }
-    CFUUIDRef uuidRef = CFUUIDCreate(kCFAllocatorDefault);
-    CFStringRef cfuuid = CFUUIDCreateString(kCFAllocatorDefault, uuidRef);
-    CFRelease(uuidRef);
-    NSString *uuid = [((__bridge NSString *) cfuuid) copy];
-    CFRelease(cfuuid);
-    return uuid;
+}
+
+- (void)randomUUID {
+    if(NSClassFromString(@"NSUUID")) {
+        _uid = [[NSUUID UUID] UUIDString];
+    } else {
+        CFUUIDRef uuidRef = CFUUIDCreate(kCFAllocatorDefault);
+        CFStringRef cfuuid = CFUUIDCreateString(kCFAllocatorDefault, uuidRef);
+        CFRelease(uuidRef);
+        NSString *uuid = [((__bridge NSString *) cfuuid) copy];
+        CFRelease(cfuuid);
+        _uid =  uuid;
+    }
+    _uidType = @"UUID";
 }
 
 @end

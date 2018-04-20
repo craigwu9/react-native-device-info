@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
 @interface DeviceUID : NSObject
-+ (NSString *)uid;
++ (DeviceUID *)shareInstanc;
+- (NSString *)uid;
+- (NSString *)uidType;
 @end
