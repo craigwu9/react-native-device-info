@@ -6,6 +6,8 @@ module.exports = {
   uniqueId: '',
   instanceId: '',
   serialNumber: '',
+  androidId:() => new Promise((resolve, reject) => resolve('')),
+  uniqueIdType:() => new Promise((resolve, reject) => resolve('')),
   getIpAddress: () => new Promise((resolve, reject) => resolve('')),
   getMacAddress: () => new Promise((resolve, reject) => resolve('')),
   deviceId: '',

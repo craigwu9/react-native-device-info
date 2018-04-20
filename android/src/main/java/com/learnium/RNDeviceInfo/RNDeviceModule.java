@@ -46,6 +46,8 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
   ReactApplicationContext reactContext;
 
   WifiInfo wifiInfo;
+  String androidId="";
+  String uniqueIdType="";
 
   public RNDeviceModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -308,4 +310,42 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
 
     return constants;
   }
+  @ReactMethod
+  public void getAndroidID(Promise promise){
+
+          String imei=null;
+          if(getCurrentActivity() != null&&(getCurrentActivity().checkCallingOrSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)) {
+                TelephonyManager telMgr = (TelephonyManager) this.reactContext.getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+                imei=telMgr.getDeviceId();
+          }
+          if(imei!=null&&!imei.startsWith("000")){
+             androidId=imei;
+             uniqueIdType="IMEI";
+          }else{
+              String androidId=Secure.getString(this.reactContext.getContentResolver(), Secure.ANDROID_ID);
+              if(androidId!=null&&!androidId.startsWith("000")){
+                  androidId=androidId;
+                  uniqueIdType="ANDROID_ID";
+              }else{
+                  String uid="";
+                  try {
+                        PackageManager pm = reactContext.getPackageManager();
+                        ApplicationInfo ai = pm.getApplicationInfo(reactContext.getPackageName(), PackageManager.GET_ACTIVITIES);
+                        uid=ai.uid+"";
+                        androidId=uid;
+                        uniqueIdType="UID";
+                  } catch (PackageManager.NameNotFoundException e) {
+                           e.printStackTrace();
+                           Toast.makeText(reactContext, e.toString(), Toast.LENGTH_SHORT).show();
+                  }
+
+                  }
+          }
+          promise.resolve(androidId);
+      }
+
+      @ReactMethod
+      public void getUniqueIDType(Promise promise){
+            promise.resolve(uniqueIdType);
+      }
 }

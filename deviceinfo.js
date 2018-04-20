@@ -13,6 +13,9 @@ module.exports = {
   getUniqueID: function() {
     return RNDeviceInfo.uniqueId;
   },
+  getAndroidID: function() {
+        return RNDeviceInfo.androidId;
+  },
   getUniqueIDType: function() {
     return RNDeviceInfo.uniqueIdType;
   },
