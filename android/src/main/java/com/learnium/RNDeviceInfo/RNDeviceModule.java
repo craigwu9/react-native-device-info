@@ -336,7 +336,6 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
                         uniqueIdType="UID";
                   } catch (PackageManager.NameNotFoundException e) {
                            e.printStackTrace();
-                           Toast.makeText(reactContext, e.toString(), Toast.LENGTH_SHORT).show();
                   }
 
                   }
